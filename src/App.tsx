@@ -1,11 +1,26 @@
 import React from 'react';
 import './App.css';
+import { usePolygon } from './hooks/usePolygon';
+import { Chart } from './components/Chart';
+import { TickerInput } from './components/TickerInput';
+import { DatePickers } from './components/DatePickers';
+import { TickersList } from './components/TickersList';
 
 
 function App() {
   const [inputValue, setInputValue] = React.useState('');
   const [tickers, setTickers] = React.useState<string[]>([]);
   const [inputError, setInputError] = React.useState('');
+  const [chartsData, setChartsData] = React.useState<{ [ticker: string]: any[] }>({});
+  const [fetching, setFetching] = React.useState(false);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
+  const { getAggregates, loading } = usePolygon();
+
+  // Date pickers state
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = React.useState(defaultFrom);
+  const [toDate, setToDate] = React.useState(today);
 
   const validateTicker = (value: string) => {
     if (!value) return 'Ticker is required.';
@@ -37,81 +52,79 @@ function App() {
   };
 
   const handleRemoveTicker = (idx: number) => {
+    const removed = tickers[idx];
     setTickers(tickers.filter((_, i) => i !== idx));
+    setChartsData(prev => {
+      const copy = { ...prev };
+      delete copy[removed];
+      return copy;
+    });
   };
 
   const isFormValid = tickers.length > 0 && tickers.length <= 3;
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  // Fetch data for all tickers
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isFormValid) return;
-    const apiKey = process.env.REACT_APP_API_KEY;
-    alert(`Tickers submitted: ${tickers.join(', ')}\nAPI Key: ${apiKey}`);
+    setFetching(true);
+    setFetchError(null);
+    const results: { [ticker: string]: any[] } = {};
+    try {
+      for (const ticker of tickers) {
+        const res = await getAggregates(ticker, fromDate, toDate);
+        if (res?.results) {
+          results[ticker] = res.results;
+        } else {
+          results[ticker] = [];
+        }
+      }
+      setChartsData(results);
+    } catch (err: any) {
+      setFetchError(err.message || 'Failed to fetch data');
+    } finally {
+      setFetching(false);
+    }
   };
 
   return (
     <div className="custom-app-container">
       <form className="custom-form" onSubmit={handleSubmit} autoComplete="off">
         <h2 className="form-title">Stock AI Analyzer</h2>
-        <div className="form-group">
-          <label htmlFor="ticker-input">Stock ticker</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input
-              type="text"
-              id="ticker-input"
-              name="ticker-input"
-              value={inputValue}
-              onChange={handleInputChange}
-              className={`custom-input${inputError ? ' input-error' : ''}`}
-              placeholder="E.g. AAPL"
-              maxLength={8}
-              autoFocus
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleAddTicker(e);
-              }}
-              disabled={tickers.length >= 3}
-            />
-            <button
-              type="button"
-              className="submit-btn"
-              style={{ minWidth: 90 }}
-              onClick={handleAddTicker}
-              disabled={!inputValue || !!inputError || tickers.length >= 3}
-            >
-              Add
-            </button>
-          </div>
-          {inputError && (
-            <span className="error-message">{inputError}</span>
-          )}
-        </div>
-        {tickers.length > 0 && (
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {tickers.map((ticker, idx) => (
-                <div key={ticker} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', borderRadius: 8, padding: '0.4rem 0.8rem', border: '1.2px solid #c3cfe2', fontWeight: 600, fontSize: '1.05rem', color: '#1a2540' }}>
-                  {ticker}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${ticker}`}
-                    onClick={() => handleRemoveTicker(idx)}
-                    style={{ marginLeft: 8, background: 'none', border: 'none', color: '#e74c3c', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', padding: 0 }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <TickerInput
+          inputValue={inputValue}
+          inputError={inputError}
+          tickers={tickers}
+          handleInputChange={handleInputChange}
+          handleAddTicker={handleAddTicker}
+        />
+        <DatePickers
+          fromDate={fromDate}
+          toDate={toDate}
+          today={today}
+          setFromDate={setFromDate}
+          setToDate={setToDate}
+        />
+        <TickersList
+          tickers={tickers}
+          handleRemoveTicker={handleRemoveTicker}
+        />
         <button
           type="submit"
           className="submit-btn"
-          disabled={!isFormValid}
+          disabled={!isFormValid || fetching || loading}
+          aria-label="Analyze tickers"
         >
-          Analyze
+          {fetching || loading ? 'Loading...' : 'Analyze'}
         </button>
+        {fetchError && <div className="error-message error-message-margin">{fetchError}</div>}
       </form>
+      {/* Charts Section */}
+      <div>
+        {Object.entries(chartsData).map(([ticker, data]) => (
+          <Chart key={ticker} data={data} ticker={ticker} />
+        ))}
+      </div>
     </div>
   );
 }

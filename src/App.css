@@ -1,3 +1,56 @@
+/* Ticker input row */
+.ticker-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Date picker row */
+.date-picker-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.date-picker-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Tickers list */
+.tickers-list-row {
+  margin-bottom: 1rem;
+}
+.tickers-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ticker-pill {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  border: 1.2px solid #c3cfe2;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1a2540;
+}
+.remove-ticker-btn {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Error message margin */
+.error-message-margin {
+  margin-top: 8px;
+}
 
 body {
   background: linear-gradient(120deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -12,6 +65,76 @@ body {
   align-items: center;
   justify-content: center;
   background: transparent;
+}
+
+/* Chart styles */
+.chart-container {
+  margin: 2rem 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #e3e8f0;
+  padding: 24px;
+  max-width: 100%;
+}
+.chart-title {
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+}
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  height: 180px;
+  gap: 2px;
+  overflow-x: auto;
+}
+.chart-bar {
+  width: 8px;
+  background: #4f8cff;
+  border-radius: 2px;
+  margin-right: 1px;
+  transition: height 0.2s;
+}
+.chart-dates {
+  font-size: 12px;
+  color: #7a869a;
+  margin-top: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .custom-app-container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem;
+  }
+  .custom-form {
+    min-width: 0;
+    width: 100%;
+    padding: 1.2rem 0.5rem;
+    box-sizing: border-box;
+  }
+  .chart-container {
+    padding: 12px;
+    margin: 1rem 0;
+  }
+}
+@media (max-width: 600px) {
+  .custom-form {
+    padding: 0.7rem 0.2rem;
+    gap: 1rem;
+  }
+  .form-title {
+    font-size: 1.1rem;
+  }
+  .chart-title {
+    font-size: 1rem;
+  }
+  .chart-bars {
+    height: 100px;
+  }
+  .chart-bar {
+    width: 5px;
+  }
 }
 
 .custom-form {
@@ -53,6 +176,7 @@ body {
   transition: border 0.2s, box-shadow 0.2s;
   font-family: inherit;
 }
+
 .custom-input:focus {
   border-color: #4f8cff;
   box-shadow: 0 0 0 2px #e3eefd;
