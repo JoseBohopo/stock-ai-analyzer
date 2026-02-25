@@ -197,7 +197,7 @@ body {
 .submit-btn {
   padding: 0.8rem 0;
   background: linear-gradient(90deg, #4f8cff 0%, #1a2540 100%);
-  color: #fff;
+  color: #f5f5f5;
   font-size: 1.13rem;
   font-weight: 600;
   border: none;
@@ -209,7 +209,7 @@ body {
 }
 .submit-btn:disabled {
   background: #c3cfe2;
-  color: #7a869a;
+  color: #495057;
   cursor: not-allowed;
   opacity: 0.7;
 }

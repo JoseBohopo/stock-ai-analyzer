@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { usePolygon } from './hooks/usePolygon';
+import { useOpenAI } from './hooks/useOpenAI';
 import { Chart } from './components/Chart';
 import { TickerInput } from './components/TickerInput';
 import { DatePickers } from './components/DatePickers';
@@ -15,6 +16,8 @@ function App() {
   const [fetching, setFetching] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const { getAggregates, loading } = usePolygon();
+  const { getChatCompletion, loading: openAILoading, error: openAIError } = useOpenAI();
+  const [openAIResult, setOpenAIResult] = React.useState<string | null>(null);
 
   // Date pickers state
   const today = new Date().toISOString().slice(0, 10);
@@ -69,8 +72,9 @@ function App() {
     if (!isFormValid) return;
     setFetching(true);
     setFetchError(null);
-    const results: { [ticker: string]: any[] } = {};
+    setOpenAIResult(null);
     try {
+      const results: { [ticker: string]: any[] } = {};
       for (const ticker of tickers) {
         const res = await getAggregates(ticker, fromDate, toDate);
         if (res?.results) {
@@ -80,6 +84,18 @@ function App() {
         }
       }
       setChartsData(results);
+
+      // Prepare a summary for OpenAI
+      const summary = Object.entries(results).map(([ticker, data]) => {
+        const closes = data.map((d: any) => d.c).filter(Boolean);
+        return `${ticker}: [${closes.slice(0, 10).join(', ')}${closes.length > 10 ? ', ...' : ''}]`;
+      }).join('\n');
+      const messages = [
+        { role: 'system', content: 'You are a financial analyst AI. Summarize the following stock close prices and provide a brief insight for each ticker.' },
+        { role: 'user', content: summary }
+      ];
+      const aiResponse = await getChatCompletion(messages);
+      setOpenAIResult(aiResponse?.choices?.[0]?.message?.content || 'No insight returned.');
     } catch (err: any) {
       setFetchError(err.message || 'Failed to fetch data');
     } finally {
@@ -125,6 +141,15 @@ function App() {
           <Chart key={ticker} data={data} ticker={ticker} />
         ))}
       </div>
+      {/* OpenAI Insight Section */}
+      {(openAILoading || openAIResult || openAIError) && (
+        <section className="openai-insight-section">
+          <h3>AI Insights</h3>
+          {openAILoading && <div>Loading AI analysis...</div>}
+          {openAIError && <div className="error-message">{openAIError}</div>}
+          {openAIResult && <div className="openai-insight-box">{openAIResult}</div>}
+        </section>
+      )}
     </div>
   );
 }
